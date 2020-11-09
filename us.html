@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美国地图</title>
+</head>
+
+
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script src="http://d3js.org/topojson.v3.min.js"></script>
+
+
+<style>
+    #map {
+        height: 90vh;
+        width: 90vw;
+
+    }
+
+    .svg-tooltip {
+        font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple   Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        background: rgba(69, 77, 93, .9);
+        border-radius: .1rem;
+        color: #fff;
+        display: block;
+        font-size: 14px;
+        padding: .1rem .6rem;
+        position: absolute;
+        text-overflow: ellipsis;
+        z-index: 300;
+        visibility: hidden;
+
+    }
+
+
+    .flex {
+        display: flex;
+
+        height: 80vh;
+        width: 100vw;
+    }
+
+    #map {
+        flex: 1;
+        height: 100%;
+    }
+
+    #re {
+        flex: 1;
+        overflow-y: scroll;
+        padding: 30px;
+        padding-bottom: 80px;
+        height: 70vh;
+    }
+
+    body {
+        text-align: center;
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+    crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+    crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.min.js"
+    integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+    crossorigin="anonymous"></script>
+
+
+<body>
+    <h4>Per Capita Personal Consumption Expenditures by State and Region for Select Categories</h4>
+    <div id="flex" class="flex">
+        <div id="map" style="text-align: center;">
+            <hr>
+            <select class="form-control" id="sel1" style="width: 60%; margin: auto;">
+              </select>
+        </div>
+        <div id="re">
+
+        </div>
+    </div>
+</body>
+
+<script type="module">
+       let selkeys = [
+        "Total Personal Consumption Expenditures",
+        "Housing and utilities",
+        "Health care",
+        "Off-premises food and beverages",
+        "Gasoline and other energy goods",
+        "All other Personal Consumption Expenditures"
+    ]
+
+    let selcolor = {
+        "Total Personal Consumption Expenditures": d3.schemeBlues[7],
+        "Housing and utilities": d3.schemePurples[7],
+        "Health care": d3.schemeGreens[7],
+        "Off-premises food and beverages": d3.schemeGreys[7],
+        "Gasoline and other energy goods": d3.schemeOranges[7],
+        "All other Personal Consumption Expenditures": d3.schemeReds[7],
+    }
+    var checkValue="Total Personal Consumption Expenditures";
+
+    selkeys.forEach((d)=>{
+        $("#sel1").append(`<option value="${d}">${d}</option>`)
+    })
+
+    $("#sel1").change((d)=>{
+    checkValue=$("#sel1").val();
+    console.log(checkValue);
+    svg.html('');
+    d3map();
+    
+    })
+
+
+   
+
+
+   
+
+
+
+    let keys = [
+        // "Total Personal Consumption Expenditures",
+        "Housing and utilities",
+        "Health care",
+        "Off-premises food and beverages",
+        "Gasoline and other energy goods",
+        "All other Personal Consumption Expenditures"
+    ]
+    let keyscolor = ["#0766AA", "#049754", "#FFDA08", "#EC7208", "#EA3847", "#779",];
+
+
+
+
+
+
+
+
+
+    const tooltip = d3.select("body").append("div")
+        .attr("class", "svg-tooltip")
+        .style("position", "absolute")
+        .style("visibility", "hidden")
+        .html("");
+
+
+    // 定义地图的长宽
+    var width = 600;
+    var height = 500;
+    // 定义地图的容器和样式
+    var svg = d3.select("#map").append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("viewBox", [0, 0, 975, 610])
+        .append("g")
+
+    var svg2w = 700;
+    var svg2h = 1400;
+    var svg2 = d3.select("#re").append("svg")
+        .attr("width", svg2w)
+        .attr("height", svg2h)
+        .append("g")
+
+    var path = d3.geoPath();
+
+    // 加载全球json数据，绘制陆地
+    let promises = [
+        d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-albers-10m.json"),
+        d3.csv("Total.csv"),
+    ];
+
+    var us, data;
+
+    function d3map(){
+
+        let maxmap=Math.ceil(d3.max(data,d=>d[checkValue])/100)*100;
+
+
+
+        let colormap = d3.scaleQuantize([1, maxmap], selcolor[checkValue]);
+
+        console.log(us)
+        const geo_data = topojson.feature(us, us.objects.states)
+        console.log(geo_data)
+        //Total Personal Consumption Expenditures,
+        // Housing and utilities,Health care,
+        //Off-premises food and beverages,
+        // Gasoline and other energy goods,
+        // ll other Personal Consumption Expenditures
+        
+
+        // console.log(d3.min(data, d => d["Total Personal Consumption Expenditures"]))
+
+
+
+        geo_data.features.forEach(element => {
+            data.forEach(element2 => {
+                if (element.properties.name == element2.name)
+                    element.properties.data = element2;
+            });
+        });
+        //把数据填入地图
+
+
+
+
+        // 添加地图块
+        svg.selectAll("path.map")
+            .data(topojson.feature(us, us.objects.states).features)
+            .enter()
+            .append("path")
+            .attr("d", path)
+            .attr("stroke", "#000")
+            .attr("stroke-width", 1)
+            .attr("fill", function (d, i) {
+
+                return colormap(d.properties.data[checkValue])
+            })
+            .on('mouseover', function (e, d) {
+                d3.select(this)
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1.5)
+                    .attr("opacity", .5)
+
+                tooltip
+                    .style("visibility", "visible")
+                    .html(`
+                    <p>Name:${d.properties.name}</p>
+                    <p>${checkValue}:${d.properties.data[checkValue]}</p>
+                    `)
+
+            })
+            .on('mouseout', function (d) {
+                d3.select(this)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 1)
+                    .attr("opacity", 1)
+
+                tooltip.style("visibility", "hidden");
+
+            })
+            .on("mousemove", function (e) {
+                tooltip.style("top", (e.pageY - 10) + "px").style("left", (e.pageX + 40) + "px");
+            })
+
+
+
+
+
+
+        svg.selectAll('.le').data(d3.range(7)).enter()
+            .append('rect')
+            .attr('x', (d) => 900)
+            .attr('y', (d) => d * 40 + height / 2)
+            .attr('width', 60)
+            .attr('height', 20)
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr('fill', (d, i) => colormap(maxmap/7*(d+1)))
+            .on('mouseover', function (d) {
+                d3.select(this)
+                    .attr("opacity", .9)
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 1);
+            })
+            .on('mouseout', function (d) {
+                d3.select(this)
+                    .attr("opacity", 1)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 1);
+            });
+
+
+        svg.selectAll('.letext').data(d3.range(7)).enter()
+            .append('text')
+            .text(d => {
+                if (d == 0) {
+                    return `0`
+                }
+
+                if (d == 6) {
+                    return `${maxmap}`
+                }
+
+                return `  `
+            })
+            .attr('x', (d) => 900)
+            .attr('y', (d) => d * 40 + 35 + height / 2)
+            .attr('fill', "black");
+
+
+
+
+
+
+    }
+
+    Promise.all(promises).then(([usd, datad]) => {
+
+        us=usd;
+        data=datad;
+        data.forEach((d) => {
+            d["Total Personal Consumption Expenditures"] = +d["Total Personal Consumption Expenditures"];
+            d["Housing and utilities"] = +d["Housing and utilities"];
+            d["Health care"] = +d["Health care"];
+            d["Off-premises food and beverages"] = +d["Off-premises food and beverages"];
+            d["Gasoline and other energy goods"] = +d["Gasoline and other energy goods"];
+            d["All other Personal Consumption Expenditures"] = +d["All other Personal Consumption Expenditures"];
+
+        });//转化成数字
+
+        d3map();
+
+        var stack = d3.stack().keys(keys)(data)
+
+        console.log(stack)
+
+        const color = d3.scaleOrdinal()
+            .domain(keys)
+            .range(keyscolor)
+
+
+
+        const xScale = d3.scaleLinear()
+            .domain([0, d3.max(stack, d => d3.max(d, subd => subd[1]))])
+            .range([0, svg2w - 300])
+
+
+        const yScale = d3.scaleBand()
+            .domain(data.map(d => d["name"]))
+            .range([0, svg2h - 400])
+            .padding(0.3);
+
+        console.log(yScale.domain())
+
+
+
+        svg2.selectAll('.datagroup').data(stack).join('g')
+            .attr('class', 'datagroup')
+            .attr('fill', d => color(d.key))
+            .selectAll('.datarect')
+            .data(d => d)
+            .join('rect')
+            .attr('class', 'datarect')
+            .attr('y', d => yScale(d.data.name) + 100)
+            .attr('x', d => svg2w - xScale(d[1]) - 300)
+            .attr('height', yScale.bandwidth())
+            .attr('width', d => xScale(d[1] - d[0]))
+            .on('mouseover', function (e, d) {
+                d3.select(this)
+
+                    .attr("opacity", .4)
+
+                tooltip
+                    .style("visibility", "visible")
+                    .html(`
+                    <p>name:${d.data["name"]}</p>
+                    <p>Total:${d.data["Total Personal Consumption Expenditures"]}</p>
+                    
+                    `)
+
+            })
+            .on('mouseout', function (d) {
+                d3.select(this)
+                    .attr("opacity", 1)
+
+                tooltip.style("visibility", "hidden");
+
+            })
+            .on("mousemove", function (e) {
+                tooltip.style("top", (e.pageY - 10) + "px").style("left", (e.pageX + 40) + "px");
+            })
+
+
+
+
+
+
+        svg2.selectAll('.datagrouptext').data(data.map(d => d["name"])).enter()
+            .append('text')
+            .text(d => d)
+            .attr('y', d => yScale(d) + 115)
+            .attr('x', d => svg2w - 280)
+
+
+
+        svg2.selectAll('.le2').data(keys).enter()
+            .append('rect')
+            .attr('x', (d, i) => i * 90 + 40)
+            .attr('y', (d, i) => 20)
+            .attr('width', 60)
+            .attr('height', 15)
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr('fill', (d, i) => color(d))
+            .on('mouseover', function (e, d) {
+                d3.select(this)
+
+                    .attr("opacity", .4)
+
+                tooltip
+                    .style("visibility", "visible")
+                    .html(`
+                    <h5>${d}</h5>
+                    
+                    `)
+
+            })
+            .on('mouseout', function (d) {
+                d3.select(this)
+                    .attr("opacity", 1)
+
+                tooltip.style("visibility", "hidden");
+
+            })
+            .on("mousemove", function (e) {
+                tooltip.style("top", (e.pageY - 100) + "px").style("left", (e.pageX - 20) + "px");
+            })
+
+
+        svg2.selectAll('.le2text').data(keys).enter()
+            .append('text')
+            .attr('x', (d, i) => i * 90 + 40)
+            .attr('y',
+                (d, i) => i % 2 == 0 ? 55 : 45)
+            .text(d => d)
+            .attr("font-size", 9)
+        //  .attr("text-anchor","middle")
+
+
+    })
+
+
+
+
+
+
+
+</script>
+
+</html>
